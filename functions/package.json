@@ -1,0 +1,25 @@
+{
+  "name": "functions",
+  "version": "1.0.0",
+  "description": "Firebase Functions for webhook, message processing, and REST API",
+  "main": "index.js",
+  "scripts": {
+    "serve": "firebase emulators:start",
+    "deploy": "firebase deploy --only functions",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "dependencies": {
+    "@azure-rest/ai-vision-image-analysis": "^1.0.0-beta.3",
+    "@azure/core-auth": "^1.9.0",
+    "axios": "^0.21.x",
+    "express": "^4.x",
+    "firebase-admin": "^11.11.1",
+    "firebase-functions": "^6.2.0",
+    "socket.io": "^4.8.1"
+  },
+  "author": "",
+  "license": "ISC"
+}
