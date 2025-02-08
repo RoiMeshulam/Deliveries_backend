@@ -1,23 +1,13 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const deliveriesController = require('../controllers/deliveriesController');
+const deliveriesController = require("../controllers/deliveriesController");
+const authenticateToken = require("../middlewares/authMiddleware");
 
-// Get all deliveries for a specific day
-router.get('/:year/:month/:day', deliveriesController.getDeliveriesByDay);
-
-// Get a delivery by ID
-router.get('/:year/:month/:day/:deliveryUID', deliveriesController.getDeliveryById);
-
-// Get deliveries between two dates
-router.get('/range', deliveriesController.getDeliveriesBetweenDates);
-
-// Post a new delivery
-router.post('/:year/:month/:day', deliveriesController.createDelivery);
-
-// Update a delivery
-router.put('/:year/:month/:day/:deliveryUID', deliveriesController.updateDelivery);
-
-// Delete a delivery
-router.delete('/:year/:month/:day/:deliveryUID', deliveriesController.deleteDelivery);
+router.get("/:year/:month/:day", authenticateToken, deliveriesController.getDeliveriesByDay);
+router.get("/:year/:month/:day/:deliveryUID", authenticateToken, deliveriesController.getDeliveryById);
+router.get("/range", authenticateToken, deliveriesController.getDeliveriesBetweenDates);
+router.post("/:year/:month/:day", authenticateToken, deliveriesController.createDelivery);
+router.put("/:year/:month/:day/:deliveryUID", authenticateToken, deliveriesController.updateDelivery);
+router.delete("/:year/:month/:day/:deliveryUID", authenticateToken, deliveriesController.deleteDelivery);
 
 module.exports = router;

@@ -3,21 +3,14 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const routes = require('./src/routes/index');
+// const http = require('http');
 const { errorHandler } = require('./src/middlewares/errorHandler');
-const { Server } = require('socket.io');
-const http = require('http');
 
 // Import Firebase setup from firebase.js
 const { rtdb, messaging } = require('./src/firebase');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: '*', // Allow all origins, adjust in production
-        methods: ['GET', 'POST'],
-    },
-});
+// const server = http.createServer(app);
 
 // Middleware
 app.use(cors({
@@ -62,8 +55,8 @@ app.post('/newDelivery', async (req, res) => {
             }
         }
 
-        // Emit the delivery data via Socket.IO
-        io.emit('newDelivery', deliveryData);
+        // // Emit the delivery data via Socket.IO
+        // io.emit('newDelivery', deliveryData);
         res.status(200).send({ success: true });
     } catch (error) {
         console.error('Error handling new delivery:', error);
@@ -71,42 +64,14 @@ app.post('/newDelivery', async (req, res) => {
     }
 });
 
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-    console.log(`Client connected: ${socket.id}`);
 
-    // Handle the 'deliveryDeleted' event from the client
-  socket.on('deliveryDeleted', (data) => {
-    console.log('Delivery deleted:', data);
-
-    // Emit to all connected clients that a delivery was deleted
-    io.emit('deliveryDeleted', data);  // This emits to all clients
-
-    // You can also emit to a specific room or client if needed
-    // socket.emit('deliveryDeleted', data);  // This would emit only to the current client
-  });
-
-  socket.on('deliveryUpdated', (data) => {
-    console.log('Delivery Updated:', data);
-
-    // Emit to all connected clients that a delivery was deleted
-    io.emit('deliveryUpdated', data);  // This emits to all clients
-
-    // You can also emit to a specific room or client if needed
-    // socket.emit('deliveryDeleted', data);  // This would emit only to the current client
-  });
-
-    socket.on('disconnect', () => {
-        console.log(`Client disconnected: ${socket.id}`);
-    });
-});
 
 // Error handling middleware
 app.use(errorHandler);
 
 // Start the server
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
+app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 

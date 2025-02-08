@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-// const { getAuth } = require('firebase/auth');
+
 
 // Your Firebase service account key file
 const serviceAccount = require('./moneymonitor-d37db-firebase-adminsdk-w6e6s-0dda1398e7.json');
