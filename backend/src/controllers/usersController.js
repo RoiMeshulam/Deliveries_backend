@@ -58,4 +58,30 @@ const signUp = async (req, res) => {
   }
 };
 
-module.exports = { signIn, signUp };
+// ✅ Get all users from Firebase Realtime Database
+const getUsers = async (req, res) => {
+  try {
+    // Fetch all users from the "users" node
+    const snapshot = await rtdb.ref("users").once("value");
+    const users = snapshot.val();
+
+    if (!users) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    // Convert object to an array with user UID included
+    const usersList = Object.keys(users).map(uid => ({
+      uid,
+      ...users[uid],
+    }));
+
+    res.status(200).json(usersList);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+module.exports = { signIn, signUp, getUsers };
+
+
