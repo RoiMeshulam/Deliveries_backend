@@ -4,22 +4,101 @@ const {rtdb} = require('../firebase');
 exports.getDeliveriesByDay = async (req, res) => {
     console.log("getDeliveriesByDay function");
     const { year, month, day } = req.params;
-    
+    console.log("day", day);
+
     try {
         const deliveriesRef = rtdb.ref(`deliveries/${year}/${month}/${day}`);
         const snapshot = await deliveriesRef.once('value');
 
         if (!snapshot.exists()) {
-            return res.status(404).send('No deliveries found for the specified day');
+            console.log("No deliveries found. Setting fictive data...");
+            
+            // Call setEmptyDataForDay when no deliveries exist
+            await setEmptyDataForDay(year, month, day);
+
+            return res.status(200).json([]); // Return an empty array after setting fictive data
         }
 
-        const deliveriesData = snapshot.val();
+        let deliveriesData = snapshot.val();
+
+        // Remove the fictive delivery if it exists
+        if (deliveriesData._placeholder) {
+            delete deliveriesData._placeholder;
+        }
+
         res.status(200).json(deliveriesData);
     } catch (error) {
         console.error('Error fetching deliveries:', error);
         res.status(500).send('Error connecting to Realtime Database');
     }
 };
+
+// Function to set a fictive delivery for a specific date
+const setEmptyDataForDay = async (year, month, day) => {
+    console.log("setEmptyDataForDay function");
+    console.log("Setting fictive data for:", { year, month, day });
+
+    try {
+        const deliveriesRef = rtdb.ref(`deliveries/${year}/${month}/${day}`);
+
+        // Insert a fictive delivery entry
+        const fictiveDelivery = {
+            _placeholder: {
+                id: "_placeholder",
+                status: "empty",
+                message: "No real deliveries yet",
+                timestamp: Date.now()
+            }
+        };
+
+        await deliveriesRef.set(fictiveDelivery);
+        console.log("Fictive delivery set at path:", `deliveries/${year}/${month}/${day}`);
+    } catch (error) {
+        console.error('Error setting fictive delivery:', error);
+    }
+};
+
+
+
+// /// Set fictive delivery data for a specific date
+// exports.setEmptyDataForDay = async (req, res) => {
+//     console.log("setEmptyDataForDay function");
+//     const { year, month, day } = getTodayDate();
+//     console.log("Setting fictive data for:", { year, month, day });
+
+//     try {
+//         const deliveriesRef = rtdb.ref(`deliveries/${year}/${month}/${day}`);
+
+//         // Insert a fictive delivery entry
+//         const fictiveDelivery = {
+//             _placeholder: {
+//                 id: "_placeholder",
+//                 status: "empty",
+//                 message: "No real deliveries yet",
+//                 timestamp: Date.now()
+//             }
+//         };
+
+//         await deliveriesRef.set(fictiveDelivery);
+        
+//         console.log("Fictive delivery set at path:", `deliveries/${year}/${month}/${day}`);
+//         return res.status(200).send('Fictive delivery set successfully');
+//     } catch (error) {
+//         console.error('Error setting fictive delivery:', error);
+//         res.status(500).send('Error connecting to Realtime Database');
+//     }
+// };
+
+
+  // Get today's date in YYYY/MM/DD format (Israel timezone)
+  const getTodayDate = () => {
+    const now = new Date();
+    const options = { timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit" };
+    const formatter = new Intl.DateTimeFormat("en-US", options);
+    const [{ value: month }, , { value: day }, , { value: year }] = formatter.formatToParts(now);
+    return { year, month, day };
+  };
+
 
 
 // Get delivery by ID
