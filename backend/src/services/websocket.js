@@ -1,8 +1,9 @@
 const { Server } = require("socket.io");
-const {rtdb} = require("../firebase");
+const { rtdb } = require("../firebase");
 
 let io;
 const connectedUsers = new Map(); // Store connected users
+let currentRef = null; // Store current Firebase listener reference
 
 const initWebSocket = (server) => {
     io = new Server(server, {
@@ -26,9 +27,10 @@ const initWebSocket = (server) => {
         });
     });
 
-    // Start Firebase Listener
+    // Start Firebase Listener and set automatic updates
     startFirebaseListener();
-    
+    scheduleDailyListenerUpdate();
+
     return io;
 };
 
@@ -40,7 +42,7 @@ const getTodayDatePath = () => {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const day = String(now.getDate()).padStart(2, "0");
-    console.log({year,month,day});
+    
     return `deliveries/${year}/${month}/${day}`;
 };
 
@@ -49,28 +51,50 @@ const startFirebaseListener = () => {
     const todayPath = getTodayDatePath();
     console.log(`📡 Listening for changes at: ${todayPath}`);
 
-    const ref = rtdb.ref(todayPath);
+    if (currentRef) {
+        console.log("🛑 Removing previous Firebase listener...");
+        currentRef.off(); // Remove previous listener
+    }
+
+    currentRef = rtdb.ref(todayPath);
 
     // Listen for new deliveries
-    ref.on("child_added", (snapshot) => {
+    currentRef.on("child_added", (snapshot) => {
         const data = { id: snapshot.key, ...snapshot.val() };
         console.log("📦 New delivery:", data);
         io.emit("updateDeliveries", { type: "new", data });
     });
 
     // Listen for updates
-    ref.on("child_changed", (snapshot) => {
+    currentRef.on("child_changed", (snapshot) => {
         const data = { id: snapshot.key, ...snapshot.val() };
         console.log("🔄 Delivery updated:", data);
         io.emit("updateDeliveries", { type: "update", data });
     });
 
     // Listen for deletions
-    ref.on("child_removed", (snapshot) => {
+    currentRef.on("child_removed", (snapshot) => {
         const id = snapshot.key;
         console.log("🗑️ Delivery deleted:", id);
         io.emit("updateDeliveries", { type: "delete", id });
     });
+};
+
+// Function to schedule daily listener update at midnight (Israel Time)
+const scheduleDailyListenerUpdate = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 2); // Convert to Israel time
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0); // Set to next midnight
+
+    const timeUntilMidnight = nextMidnight - now;
+    console.log(`⏳ Scheduling next listener update in ${timeUntilMidnight / 1000 / 60} minutes`);
+
+    setTimeout(() => {
+        console.log("🌅 Midnight reached, updating Firebase listener...");
+        startFirebaseListener(); // Update the listener
+        scheduleDailyListenerUpdate(); // Reschedule for next day
+    }, timeUntilMidnight);
 };
 
 module.exports = { initWebSocket };
