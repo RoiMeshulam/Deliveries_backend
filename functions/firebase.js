@@ -1,13 +1,15 @@
 const admin = require('firebase-admin');
+require("dotenv").config();
+
 // const { getAuth } = require('firebase/auth');
 
 // Your Firebase service account key file
-const serviceAccount = require('./moneymonitor-d37db-firebase-adminsdk-w6e6s-0dda1398e7.json');
+const serviceAccount = require(process.env.SERVICE_ACCOUNT);
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://moneymonitor-d37db-default-rtdb.firebaseio.com/', // Your Realtime Database URL
+  databaseURL: process.env.DATABASE_URL, // Your Realtime Database URL
 });
 
 // Firestore instance from Admin SDK

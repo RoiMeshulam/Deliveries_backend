@@ -2,8 +2,8 @@ const createClient = require("@azure-rest/ai-vision-image-analysis").default;
 const { AzureKeyCredential } = require("@azure/core-auth");
 
 // Azure credentials and endpoint
-const endpoint = "https://roitest.cognitiveservices.azure.com/"; // Replace with your endpoint
-const key = "d62c33c305d14f42bd766ffa788cb3cb"; // Replace with your key
+const endpoint = process.env.AZURE_ENDPOINT; // Replace with your endpoint
+const key = process.env.AZURE_KEY; // Replace with your key
 const credential = new AzureKeyCredential(key);
 const client = createClient(endpoint, credential);
 
