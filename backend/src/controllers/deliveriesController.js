@@ -2,30 +2,22 @@ const {rtdb} = require('../firebase');
 
 // Get all deliveries for a specific date
 exports.getDeliveriesByDay = async (req, res) => {
-    console.log("getDeliveriesByDay function");
     const { year, month, day } = req.params;
-    console.log("day", day);
-
     try {
         const deliveriesRef = rtdb.ref(`deliveries/${year}/${month}/${day}`);
         const snapshot = await deliveriesRef.once('value');
 
         if (!snapshot.exists()) {
             console.log("No deliveries found. Setting fictive data...");
-            
-            // Call setEmptyDataForDay when no deliveries exist
             await setEmptyDataForDay(year, month, day);
-
             return res.status(200).json([]); // Return an empty array after setting fictive data
         }
 
         let deliveriesData = snapshot.val();
-
         // Remove the fictive delivery if it exists
         if (deliveriesData._placeholder) {
             delete deliveriesData._placeholder;
         }
-
         res.status(200).json(deliveriesData);
     } catch (error) {
         console.error('Error fetching deliveries:', error);
@@ -40,7 +32,6 @@ const setEmptyDataForDay = async (year, month, day) => {
 
     try {
         const deliveriesRef = rtdb.ref(`deliveries/${year}/${month}/${day}`);
-
         // Insert a fictive delivery entry
         const fictiveDelivery = {
             _placeholder: {
@@ -57,49 +48,6 @@ const setEmptyDataForDay = async (year, month, day) => {
         console.error('Error setting fictive delivery:', error);
     }
 };
-
-
-
-// /// Set fictive delivery data for a specific date
-// exports.setEmptyDataForDay = async (req, res) => {
-//     console.log("setEmptyDataForDay function");
-//     const { year, month, day } = getTodayDate();
-//     console.log("Setting fictive data for:", { year, month, day });
-
-//     try {
-//         const deliveriesRef = rtdb.ref(`deliveries/${year}/${month}/${day}`);
-
-//         // Insert a fictive delivery entry
-//         const fictiveDelivery = {
-//             _placeholder: {
-//                 id: "_placeholder",
-//                 status: "empty",
-//                 message: "No real deliveries yet",
-//                 timestamp: Date.now()
-//             }
-//         };
-
-//         await deliveriesRef.set(fictiveDelivery);
-        
-//         console.log("Fictive delivery set at path:", `deliveries/${year}/${month}/${day}`);
-//         return res.status(200).send('Fictive delivery set successfully');
-//     } catch (error) {
-//         console.error('Error setting fictive delivery:', error);
-//         res.status(500).send('Error connecting to Realtime Database');
-//     }
-// };
-
-
-  // Get today's date in YYYY/MM/DD format (Israel timezone)
-  const getTodayDate = () => {
-    const now = new Date();
-    const options = { timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit" };
-    const formatter = new Intl.DateTimeFormat("en-US", options);
-    const [{ value: month }, , { value: day }, , { value: year }] = formatter.formatToParts(now);
-    return { year, month, day };
-  };
-
-
 
 // Get delivery by ID
 exports.getDeliveryById = async (req, res) => {
@@ -120,7 +68,6 @@ exports.getDeliveryById = async (req, res) => {
         res.status(500).send('Error connecting to Realtime Database');
     }
 };
-
 
 // Get deliveries between two dates
 exports.getDeliveriesBetweenDates = async (req, res) => {
@@ -172,7 +119,6 @@ exports.getDeliveriesBetweenDates = async (req, res) => {
     }
 };
 
-
 // Post a new delivery
 exports.createDelivery = async (req, res) => {
     const { year, month, day } = req.params;
@@ -213,7 +159,6 @@ exports.updateDelivery = async (req, res) => {
         res.status(500).send('Error updating delivery in Realtime Database');
     }
 };
-
 
 // Delete a delivery
 exports.deleteDelivery = async (req, res) => {

@@ -1,6 +1,5 @@
 const { auth, rtdb, admin } = require("../firebase");
 
-// ✅ User Login (React Native will send email & password)
 const signIn = async (req, res) => {
   const idToken = req.body.token;
 
@@ -16,7 +15,7 @@ const signIn = async (req, res) => {
     if (userData) {
       // Send back a response with the user data and a token
       res.status(200).json({
-        token: userData.token, // You can customize this if you want to generate a new token
+        token: userData.token, 
         uid,
         role: userData.role,
         name: userData.name,
@@ -30,7 +29,7 @@ const signIn = async (req, res) => {
   }
 };
 
-// ✅ User Signup (Register a new user)
+// Register a new user
 const signUp = async (req, res) => {
   const { email, password, name, role } = req.body;
 
@@ -58,7 +57,7 @@ const signUp = async (req, res) => {
   }
 };
 
-// ✅ Get all users from Firebase Realtime Database
+// Get all users from Firebase Realtime Database
 const getUsers = async (req, res) => {
   try {
     // Fetch all users from the "users" node
