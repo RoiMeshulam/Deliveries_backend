@@ -1,4 +1,3 @@
-const functions = require('firebase-functions');
 const { firestoreDb, rtdb } = require('./firebase');
 const handleMessage = require('./handleMessage');
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
@@ -53,10 +52,15 @@ exports.processMessages = onDocumentCreated(`messages/{messageId}`, async (event
                 if (messageTimestamp) {
                     // Convert timestamp to readable format
                     const messageDate = new Date(messageTimestamp * 1000);
+                    const { year } = getTodayDate(); // Get the correct year
+                
                     formattedTimestamp = messageDate.toLocaleString('en-GB', {
                         day: '2-digit', month: '2-digit', year: 'numeric',
                         hour: '2-digit', minute: '2-digit', second: '2-digit',
                     }).replace(',', '');
+                
+                    // Replace the incorrect year with the correct one
+                    formattedTimestamp = formattedTimestamp.replace(/\d{4}/, year);
                 }
 
                 const phones = Array.isArray(result.phones)
