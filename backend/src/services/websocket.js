@@ -17,22 +17,29 @@ const initWebSocket = (server) => {
     io.on("connection", (socket) => {
         const userId = socket.handshake.query.userId;
         console.log(`🔌 User connected: ${userId} (Socket ID: ${socket.id})`);
-
+    
         if (userId) {
             connectedUsers.set(userId, socket);
         }
-
-        // Listen for FCM token updates
-        socket.on("registerFcmToken", (fcmToken) => {
+    
+        // ✅ Listen for FCM token updates and store in Firebase
+        socket.on("registerFcmToken", async (fcmToken) => {
             console.log(`📲 Received FCM token from user ${userId}: ${fcmToken}`);
-            userFcmTokens.set(userId, fcmToken);
+            
+            userFcmTokens.set(userId, fcmToken); // Store in memory
+    
+            // ✅ Save to Firebase Database
+            await rtdb.ref(`users/${userId}`).update({ fcmToken });
+    
+            console.log(`✅ FCM token saved to Firebase for user ${userId}`);
         });
-
+    
         socket.on("disconnect", () => {
             console.log(`❌ User disconnected: ${userId} (Socket ID: ${socket.id})`);
             connectedUsers.delete(userId);
         });
     });
+    
 
     // Start Firebase Listener and set automatic updates
     startFirebaseListener();
@@ -107,29 +114,51 @@ const scheduleDailyListenerUpdate = () => {
 };
 
 const sendFcmNotification = async (delivery) => {
-    const title = "New Delivery Available!";
-    const body = `Delivery ${delivery.id} has been added.`;
-    
-    // Send notification to all registered FCM tokens
-    const fcmTokens = Array.from(userFcmTokens.values());
-
-    if (fcmTokens.length === 0) {
-        console.log("⚠️ No registered FCM tokens.");
-        return;
-    }
-
-    const message = {
-        notification: { title, body },
-        tokens: fcmTokens, // Send to multiple devices
-    };
+    const title = `📦 משלוח חדש זמין!`;  // Title in Hebrew (New Delivery Available!)
+    const body = ` משלוח חדש לכתובת ${delivery.address}, ${delivery.city}.`;
 
     try {
+        // ✅ Get FCM Tokens from Firebase Realtime Database
+        const snapshot = await rtdb.ref("users").once("value");
+        const users = snapshot.val();
+
+        if (!users) {
+            console.log("⚠️ No users found in Firebase.");
+            return;
+        }
+
+        // ✅ Extract FCM tokens from users
+        const fcmTokens = Object.values(users)
+            .map(user => user.fcmToken)
+            .filter(token => token); // Remove null values
+
+        if (fcmTokens.length === 0) {
+            console.log("⚠️ No registered FCM tokens.");
+            return;
+        }
+
+        // ✅ Construct a Rich Notification with Custom Data
+        const message = {
+            notification: { title, body },
+            data: {
+                deliveryId: delivery.id,
+                address: delivery.address,
+                city: delivery.city,
+                customer: delivery.customer || "Unknown",
+                status: delivery.status ? "נמסר" : "ממתין", // Delivered / Pending
+            },
+            tokens: fcmTokens, // ✅ Send to multiple devices
+        };
+
         const response = await messaging.sendEachForMulticast(message);
-        console.log("✅ FCM Notification sent successfully:", response);
+        console.log("✅ Custom FCM Notification sent successfully:", response);
+        
     } catch (error) {
-        console.error("❌ Error sending FCM notification:", error);
+        console.error("❌ Error sending custom FCM notification:", error);
     }
 };
+
+
 
 
 module.exports = { initWebSocket };

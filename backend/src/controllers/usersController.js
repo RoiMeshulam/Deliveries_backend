@@ -1,31 +1,43 @@
 const { auth, rtdb, admin } = require("../firebase");
 
 const signIn = async (req, res) => {
-  const idToken = req.body.token;
+  const { token, fcmToken } = req.body;
+
+  if (!token || !fcmToken) {
+    return res.status(400).json({ error: "Missing token or FCM token" });
+  }
 
   try {
-    // Verify the Firebase ID token
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    // 🔹 Verify Firebase Authentication token
+    const decodedToken = await admin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
 
-    // Fetch user details from Firebase Realtime Database
+    console.log(`🔑 User authenticated: ${uid}`);
+
+    // 🔹 Retrieve user data from Firebase Realtime Database
     const snapshot = await rtdb.ref(`users/${uid}`).once("value");
     const userData = snapshot.val();
 
-    if (userData) {
-      // Send back a response with the user data and a token
-      res.status(200).json({
-        token: userData.token, 
-        uid,
-        role: userData.role,
-        name: userData.name,
-      });
-    } else {
-      res.status(404).json({ error: "User not found" });
+    if (!userData) {
+      console.warn(`⚠️ User not found: ${uid}`);
+      return res.status(404).json({ error: "User not found" });
     }
+
+    // 🔹 Update FCM token for push notifications
+    await rtdb.ref(`users/${uid}`).update({ fcmToken });
+    console.log(`📲 Updated FCM token for ${uid}: ${fcmToken}`);
+
+    // 🔹 Return user data & updated FCM token
+    return res.status(200).json({
+      uid,
+      role: userData.role,
+      name: userData.name,
+      fcmToken,
+    });
+
   } catch (error) {
-    console.error("Error verifying token:", error);
-    res.status(401).json({ error: "Unauthorized" });
+    console.error("❌ Token verification failed:", error);
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 };
 
