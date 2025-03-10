@@ -3,8 +3,8 @@ const { auth, rtdb, admin } = require("../firebase");
 const signIn = async (req, res) => {
   const { token, fcmToken } = req.body;
 
-  if (!token || !fcmToken) {
-    return res.status(400).json({ error: "Missing token or FCM token" });
+  if (!token) {
+    return res.status(400).json({ error: "Missing authentication token" });
   }
 
   try {
@@ -23,16 +23,20 @@ const signIn = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 🔹 Update FCM token for push notifications
-    await rtdb.ref(`users/${uid}`).update({ fcmToken });
-    console.log(`📲 Updated FCM token for ${uid}: ${fcmToken}`);
+    // 🔹 Update FCM token only if provided
+    if (fcmToken) {
+      await rtdb.ref(`users/${uid}`).update({ fcmToken });
+      console.log(`📲 Updated FCM token for ${uid}: ${fcmToken}`);
+    } else {
+      console.log(`⚠️ No FCM token provided for ${uid}`);
+    }
 
-    // 🔹 Return user data & updated FCM token
+    // 🔹 Return user data
     return res.status(200).json({
       uid,
       role: userData.role,
       name: userData.name,
-      fcmToken,
+      fcmToken: fcmToken || userData.fcmToken || null, // Return existing or new token
     });
 
   } catch (error) {
@@ -40,6 +44,7 @@ const signIn = async (req, res) => {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 };
+
 
 // Register a new user
 const signUp = async (req, res) => {

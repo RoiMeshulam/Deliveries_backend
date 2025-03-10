@@ -44,6 +44,7 @@ const initWebSocket = (server) => {
     // Start Firebase Listener and set automatic updates
     startFirebaseListener();
     scheduleDailyListenerUpdate();
+    startUserListener();
 
     return io;
 };
@@ -156,6 +157,22 @@ const sendFcmNotification = async (delivery) => {
     } catch (error) {
         console.error("❌ Error sending custom FCM notification:", error);
     }
+};
+
+
+const startUserListener = () => {
+    console.log("📡 Listening for new users...");
+
+    const usersRef = rtdb.ref("users");
+
+    // Listen for new users
+    usersRef.on("child_added", (snapshot) => {
+        const newUser = { id: snapshot.key, ...snapshot.val() };
+        console.log("👤 New user created:", newUser);
+
+        // Emit event to all connected clients
+        io.emit("newUserCreated", newUser);
+    });
 };
 
 
